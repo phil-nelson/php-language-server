@@ -53,4 +53,6 @@ interface ReadableIndex extends EmitterInterface
      * @return string[]
      */
     public function getReferenceUris(string $fqn): array;
+
+    public function getSignatureInformation(string $fqn);
 }

@@ -131,6 +131,16 @@ abstract class AbstractAggregateIndex implements ReadableIndex
         }
     }
 
+    public function getSignatureInformation(string $fqn)
+    {
+        foreach ($this->getIndexes() as $index) {
+            if ($sig = $index->getSignatureInformation($fqn)) {
+                return $sig;
+            }
+        }
+        return null;
+    }
+
     /**
      * Returns all URIs in this index that reference a symbol
      *

@@ -48,42 +48,28 @@ class SignatureHelpProvider
      *
      * @return Promise <SignatureHelp>
      */
-    public function getSignatureHelp(PhpDocument $doc, Position $position): Promise
+    public function getSignatureHelp(PhpDocument $doc, Position $position): SignatureHelp
     {
-        return coroutine(function () use ($doc, $position) {
-            // Find the node under the cursor
-            $node = $doc->getNodeAtPosition($position);
+        // Find the node under the cursor
+        $node = $doc->getNodeAtPosition($position);
 
-            // Find the definition of the item being called
-            list($def, $argumentExpressionList) = $this->getCallingInfo($node);
+        // Find the definition of the item being called
+        list($def, $argumentExpressionList) = $this->getCallingInfo($node);
 
-            if (!$def) {
-                return new SignatureHelp();
-            }
+        if (!$def) {
+            return new SignatureHelp();
+        }
 
-            // Get information from the item being called to build the signature information
-            $calledDoc = yield $this->documentLoader->getOrLoad($def->symbolInformation->location->uri);
-            if (!$calledDoc) {
-                return new SignatureHelp();
-            }
-            $calledNode = $calledDoc->getNodeAtPosition($def->symbolInformation->location->range->start);
-            $params = $this->getParameters($calledNode, $calledDoc);
-            $label = $this->getLabel($calledNode, $params, $calledDoc);
-
+        if ($signatureInformation = $this->index->getSignatureInformation($def->fqn)) {
             // Find the active parameter
             $activeParam = $argumentExpressionList
                 ? $this->findActiveParameter($argumentExpressionList, $position, $doc)
                 : 0;
-
-            $signatureInformation = new SignatureInformation(
-                $label,
-                $params,
-                $this->definitionResolver->getDocumentationFromNode($calledNode)
-            );
             $signatureHelp = new SignatureHelp([$signatureInformation], 0, $activeParam);
 
             return $signatureHelp;
-        });
+        }
+        return new SignatureHelp();
     }
 
     /**

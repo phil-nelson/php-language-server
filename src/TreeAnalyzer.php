@@ -3,13 +3,12 @@ declare(strict_types = 1);
 
 namespace LanguageServer;
 
-use LanguageServer\Protocol\{Diagnostic, DiagnosticSeverity, Range, Position, TextEdit};
+use LanguageServer\Protocol\{Diagnostic, DiagnosticSeverity, Range, Position, TextEdit, ParameterInformation, SignatureInformation};
 use LanguageServer\Index\Index;
 use phpDocumentor\Reflection\DocBlockFactory;
 use Sabre\Uri;
 use Microsoft\PhpParser;
-use Microsoft\PhpParser\Node;
-use Microsoft\PhpParser\Token;
+use Microsoft\PhpParser\{Node, Token, FunctionLike};
 
 class TreeAnalyzer
 {
@@ -40,6 +39,11 @@ class TreeAnalyzer
     /** @var Node[] */
     private $definitionNodes;
 
+    /** @var array */
+    private $signatureInformation;
+
+    private $signatureInformationFactory;
+
     /**
      * @param PhpParser\Parser $parser
      * @param string $content
@@ -53,6 +57,8 @@ class TreeAnalyzer
         $this->docBlockFactory = $docBlockFactory;
         $this->definitionResolver = $definitionResolver;
         $this->sourceFileNode = $this->parser->parseSourceFile($content, $uri);
+
+        $this->signatureInformationFactory = new SignatureInformationFactory();
 
         // TODO - docblock errors
 
@@ -123,6 +129,7 @@ class TreeAnalyzer
         // Only update/descend into Nodes, Tokens are leaves
         if ($currentNode instanceof Node) {
             $this->collectDefinitionsAndReferences($currentNode);
+            $this->collectFunction($currentNode);
 
             foreach ($currentNode::CHILD_NAMES as $name) {
                 $child = $currentNode->$name;
@@ -262,6 +269,11 @@ class TreeAnalyzer
         return $this->definitions ?? [];
     }
 
+    public function getSignatureInformation()
+    {
+        return $this->signatureInformation ?? [];
+    }
+
     /**
      * @return Node[]
      */
@@ -284,5 +296,18 @@ class TreeAnalyzer
     public function getSourceFileNode()
     {
         return $this->sourceFileNode;
+    }
+
+    private function collectFunction(Node $node)
+    {
+        if (!($node instanceof FunctionLike)) {
+            return;
+        }
+        $fqn = ($this->definitionResolver)::getDefinedFqn($node);
+        $this->signatureInformation[$fqn] = $this->signatureInformationFactory->createSignatureInformation(
+            $node,
+            $this->definitionResolver,
+            $this->sourceFileNode->fileContents
+        );
     }
 }
