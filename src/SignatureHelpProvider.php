@@ -60,16 +60,17 @@ class SignatureHelpProvider
             return new SignatureHelp();
         }
 
-        if ($signatureInformation = $this->index->getSignatureInformation($def->fqn)) {
-            // Find the active parameter
-            $activeParam = $argumentExpressionList
-                ? $this->findActiveParameter($argumentExpressionList, $position, $doc)
-                : 0;
-            $signatureHelp = new SignatureHelp([$signatureInformation], 0, $activeParam);
+        $signatureInformation = $this->index->getSignatureInformation($def->fqn);
 
-            return $signatureHelp;
+        if (!$signatureInformation) {
+            return new SignatureHelp();
         }
-        return new SignatureHelp();
+
+        // Find the active parameter
+        $activeParam = $argumentExpressionList
+            ? $this->findActiveParameter($argumentExpressionList, $position, $doc)
+            : 0;
+        return new SignatureHelp([$signatureInformation], 0, $activeParam);
     }
 
     /**
@@ -138,55 +139,6 @@ class SignatureHelpProvider
             return null;
         }
         return [$def, $argumentExpressionList];
-    }
-
-    /**
-     * Creates a label for SignatureInformation
-     *
-     * @param Node\MethodDeclaration|Node\Statement\FunctionDeclaration $node   The method/function declaration node
-     *                                                                          we are building the label for
-     * @param ParameterInformation[]                                    $params Parameters that belong to the node
-     *
-     * @return string
-     */
-    private function getLabel($node, array $params): string
-    {
-        $label = '(';
-        if ($params) {
-            foreach ($params as $param) {
-                $label .= $param->label . ', ';
-            }
-            $label = substr($label, 0, -2);
-        }
-        $label .= ')';
-        return $label;
-    }
-
-    /**
-     * Builds ParameterInformation from a node
-     *
-     * @param Node\MethodDeclaration|Node\Statement\FunctionDeclaration $node The node to build parameters from
-     * @param PhpDocument                                               $doc  The document the node belongs to
-     *
-     * @return ParameterInformation[]
-     */
-    private function getParameters($node, PhpDocument $doc): array
-    {
-        $params = [];
-        if ($node->parameters) {
-            foreach ($node->parameters->getElements() as $element) {
-                $param = (string) $this->definitionResolver->getTypeFromNode($element);
-                $param .= ' ' . $element->variableName->getText($doc->getContent());
-                if ($element->default) {
-                    $param .= ' = ' . $element->default->getText($doc->getContent());
-                }
-                $params[] = new ParameterInformation(
-                    $param,
-                    $this->definitionResolver->getDocumentationFromNode($element)
-                );
-            }
-        }
-        return $params;
     }
 
     /**
