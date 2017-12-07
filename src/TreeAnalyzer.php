@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace LanguageServer;
 
-use LanguageServer\Protocol\{Diagnostic, DiagnosticSeverity, Range, Position, TextEdit, ParameterInformation, SignatureInformation};
+use LanguageServer\Protocol\{Diagnostic, DiagnosticSeverity, Range, Position, TextEdit};
 use LanguageServer\Index\Index;
 use phpDocumentor\Reflection\DocBlockFactory;
 use Sabre\Uri;
@@ -129,7 +129,7 @@ class TreeAnalyzer
         // Only update/descend into Nodes, Tokens are leaves
         if ($currentNode instanceof Node) {
             $this->collectDefinitionsAndReferences($currentNode);
-            $this->collectFunction($currentNode);
+            $this->collectSignatureInformation($currentNode);
 
             foreach ($currentNode::CHILD_NAMES as $name) {
                 $child = $currentNode->$name;
@@ -298,7 +298,7 @@ class TreeAnalyzer
         return $this->sourceFileNode;
     }
 
-    private function collectFunction(Node $node)
+    private function collectSignatureInformation(Node $node)
     {
         if (!($node instanceof FunctionLike)) {
             return;
