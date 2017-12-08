@@ -8,7 +8,8 @@ use LanguageServer\Index\Index;
 use phpDocumentor\Reflection\DocBlockFactory;
 use Sabre\Uri;
 use Microsoft\PhpParser;
-use Microsoft\PhpParser\{Node, Token, FunctionLike};
+use Microsoft\PhpParser\Node;
+use Microsoft\PhpParser\Token;
 
 class TreeAnalyzer
 {
