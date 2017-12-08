@@ -67,8 +67,6 @@ class PhpDocument
      */
     private $definitionNodes;
 
-    private $signatureInformation;
-
     /**
      * Map from fully qualified name (FQN) to array of nodes that reference the symbol
      *
@@ -156,8 +154,6 @@ class PhpDocument
 
         $this->referenceNodes = $treeAnalyzer->getReferenceNodes();
 
-        $this->signatureInformation = $treeAnalyzer->getSignatureInformation();
-
         foreach ($this->definitions as $fqn => $definition) {
             $this->index->setDefinition($fqn, $definition);
         }
@@ -165,10 +161,6 @@ class PhpDocument
         // Register this document on the project for references
         foreach ($this->referenceNodes as $fqn => $nodes) {
             $this->index->addReferenceUri($fqn, $this->uri);
-        }
-
-        foreach ($this->signatureInformation as $fqn => $signatureInformation) {
-            $this->index->setSignatureInformation($fqn, $signatureInformation);
         }
 
         $this->sourceFileNode = $treeAnalyzer->getSourceFileNode();

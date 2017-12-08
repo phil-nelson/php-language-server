@@ -8,43 +8,75 @@ use Microsoft\PhpParser\FunctionLike;
 
 class SignatureInformationFactory
 {
-    public function createSignatureInformation(
-        FunctionLike $node,
-        DefinitionResolver $definitionResolver,
-        string $fileContents
-    ): SignatureInformation {
-        $params = $this->getParameters($node, $definitionResolver, $fileContents);
-		$label = $this->getLabel($params);
+    /** @var DefinitionResolver */
+    private $definitionResolver;
+
+    /**
+     * Create a SignatureInformationFactory
+     *
+     * @param DefinitionResolver $definitionResolver
+     */
+    public function __construct(DefinitionResolver $definitionResolver)
+    {
+        $this->definitionResolver = $definitionResolver;
+    }
+
+    /**
+     * Create a SignatureInformation from a FunctionLike node
+     *
+     * @param FunctionLike $node Node to create signature information from
+     *
+     * @return SignatureInformation
+     */
+    public function create(FunctionLike $node): SignatureInformation
+    {
+        $params = $this->createParameters($node);
+		$label = $this->createLabel($params);
 		return new SignatureInformation(
 			$label,
 			$params,
-			$definitionResolver->getDocumentationFromNode($node)
+			$this->definitionResolver->getDocumentationFromNode($node)
 		);
     }
 
-    private function getParameters(
-        FunctionLike $node,
-        DefinitionResolver $definitionResolver,
-        string $fileContents
-    ): array {
+    /**
+     * Gets parameters from a FunctionLike node
+     *
+     * @param FunctionLike $node Node to get parameters from
+     *
+     * @return ParameterInformation[]
+     */
+    private function createParameters(FunctionLike $node): array
+    {
         $params = [];
         if ($node->parameters) {
             foreach ($node->parameters->getElements() as $element) {
-                $param = (string) $definitionResolver->getTypeFromNode($element);
-                $param .= ' ' . $element->variableName->getText($fileContents);
+                $param = (string) $this->definitionResolver->getTypeFromNode($element);
+                $param .= ' ';
+                if ($element->dotDotDotToken) {
+                    $param .= '...';
+                }
+                $param .= '$' . $element->getName();
                 if ($element->default) {
-                    $param .= ' = ' . $element->default->getText($fileContents);
+                    $param .= ' = ' . $element->default->getText();
                 }
                 $params[] = new ParameterInformation(
                     $param,
-                    $definitionResolver->getDocumentationFromNode($element)
+                    $this->definitionResolver->getDocumentationFromNode($element)
                 );
             }
         }
         return $params;
     }
 
-    private function getLabel(array $params): string
+    /**
+     * Creates a signature information label from parameters
+     *
+     * @param ParameterInformation[] $params Parameters to create the label from
+     *
+     * @return string
+     */
+    private function createLabel(array $params): string
     {
         $label = '(';
         if ($params) {

@@ -3,7 +3,6 @@ declare(strict_types = 1);
 
 namespace LanguageServer\Index;
 
-use LanguageServer\Protocol\SignatureInformation;
 use LanguageServer\Definition;
 use Sabre\Event\EmitterTrait;
 
@@ -28,8 +27,6 @@ class Index implements ReadableIndex, \Serializable
      * @var string[][]
      */
     private $references = [];
-
-    private $signatureInformation = [];
 
     /**
      * @var bool
@@ -129,16 +126,6 @@ class Index implements ReadableIndex, \Serializable
         $this->emit('definition-added');
     }
 
-    public function setSignatureInformation(string $fqn, SignatureInformation $signatureInformation)
-    {
-        $this->signatureInformation[$fqn] = $signatureInformation;
-    }
-
-    public function getSignatureInformation(string $fqn)
-    {
-        return $this->signatureInformation[$fqn] ?? null;
-    }
-
     /**
      * Unsets the Definition for a specific symbol
      * and removes all references pointing to that symbol
@@ -231,7 +218,6 @@ class Index implements ReadableIndex, \Serializable
         return serialize([
             'definitions' => $this->definitions,
             'references' => $this->references,
-            'functions' => $this->functions,
             'complete' => $this->complete,
             'staticComplete' => $this->staticComplete
         ]);
